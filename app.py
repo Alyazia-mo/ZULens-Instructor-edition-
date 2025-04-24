@@ -216,6 +216,27 @@ def login_user():
     else:
         return jsonify({"error": "Invalid credentials"}), 401
 
+@app.route("/faculty-login", methods=["POST"])
+def faculty_login():
+    data = request.get_json()
+    email = data.get("email", "").strip()
+    password = data.get("password", "").strip()
+
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, name, role FROM users WHERE email = ? AND password = ? AND role = 'faculty'", (email, password))
+    user = cursor.fetchone()
+    conn.close()
+
+    if user:
+        session["user_id"] = user[0]
+        session["username"] = user[1]
+        session["role"] = "faculty"
+        session["email"] = email
+        return jsonify({"message": "Login successful", "redirect": "/faculty-dashboard"}), 200
+    else:
+        return jsonify({"error": "Invalid credentials"}), 401
+
 @app.route("/logout", methods=["POST"])
 def logout():
     session.clear()
