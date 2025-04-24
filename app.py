@@ -85,7 +85,7 @@ def role_page():
 @app.route("/faculty/dashboard")
 def faculty_dashboard():
     if "user_id" not in session or session.get("role") != "faculty":
-        return redirect(url_for("login_page"))
+        return redirect(url_for("f-login.html"))
     return render_template("faculty_dashboard.html")
 
 
@@ -197,22 +197,20 @@ def login_student():
 @app.route("/faculty-login", methods=["POST"])
 def login_faculty():
     data = request.json
-    email = data.get("email")
-    password = data.get("password")
-
+    email, password = data.get("email"), data.get("password")
     conn = sqlite3.connect(DATABASE_PATH)
-    cursor = conn.cursor()
-    cursor.execute("SELECT id, role FROM users WHERE email = ? AND password = ?", (email, password))
-    result = cursor.fetchone()
+    c = conn.cursor()
+    c.execute("SELECT id, name FROM users WHERE email = ? AND password = ? AND role = 'faculty'", (email, password))
+    result = c.fetchone()
     conn.close()
 
     if result:
         session["user_id"] = result[0]
         session["email"] = email
-        session["role"] = result[1]
-        return jsonify({"message": "Login successful", "role": result[1]}), 200
-    else:
-        return jsonify({"error": "Invalid credentials"}), 401
+        session["role"] = "faculty"
+        session["name"] = result[1]
+        return jsonify({"message": "Login successful"}), 200
+    return jsonify({"error": "Invalid credentials"}), 401
 
 @app.route("/logout", methods=["POST"])
 def logout():
@@ -256,16 +254,6 @@ def get_faculty_reviews():
 
     return jsonify(reviews)
 
-
-@app.route("/faculty/reveal-grade/<int:review_id>", methods=["POST"])
-def reveal_grade(review_id):
-    conn = sqlite3.connect(DATABASE_PATH)
-    cursor = conn.cursor()
-    # We'll simulate a revealed grade (e.g., "D") for this example
-    cursor.execute("UPDATE reviews SET grade = 'D' WHERE id = ?", (review_id,))
-    conn.commit()
-    conn.close()
-    return jsonify({"message": "Grade revealed"}), 200
 
 
 @app.route("/faculty/report-review/<int:review_id>", methods=["POST"])
