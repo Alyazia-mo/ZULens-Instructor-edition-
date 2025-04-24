@@ -240,7 +240,7 @@ def faculty_login():
         session["username"] = user[1]
         session["role"] = "faculty"
         session["email"] = email
-        return jsonify({"message": "Login successful", "redirect": "/faculty-dashboard"}), 200
+        return jsonify({"message": "Login successful", "redirect": "/faculty/dashboard"}), 200
     else:
         return jsonify({"error": "Invalid credentials or not a faculty account"}), 401
 
@@ -461,7 +461,7 @@ def submit_review():
     A new anonymous review mentioning you has been submitted on ZULens.
 
     Please log in to your Faculty Dashboard to view it:
-    🔗 https://www.zulens.org/faculty-dashboard
+    🔗 https://www.zulens.org/faculty/dashboard
 
     -- ZULens Team
     """
