@@ -82,7 +82,7 @@ def faculty_login_page():
 def role_page():
     return render_template("role.html")
 
-@app.route("/faculty/dashboard")
+@app.route("/faculty-dashboard")
 def faculty_dashboard():
     if "user_id" not in session or session.get("role") != "faculty":
         return redirect(url_for("f-login.html"))
@@ -456,7 +456,7 @@ def submit_review():
     A new anonymous review mentioning you has been submitted on ZULens.
 
     Please log in to your Faculty Dashboard to view it:
-    🔗 https://www.zulens.org/faculty/dashboard
+    🔗 https://www.zulens.org/faculty-dashboard
 
     -- ZULens Team
     """
