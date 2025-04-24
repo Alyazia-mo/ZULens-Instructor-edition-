@@ -446,7 +446,7 @@ def submit_review():
     # Notify faculty if the name matches and notifications are enabled
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
-    cursor.execute("SELECT email, email_notifications FROM users WHERE name = ? AND role = 'faculty'", (instructor,))
+    cursor.execute("SELECT email, email_notifications FROM users WHERE fullname = ? AND role = 'faculty'", (instructor,))
     faculty = cursor.fetchone()
     conn.close()
 
