@@ -162,11 +162,11 @@ def signup_student():
 @app.route("/faculty-signup", methods=["POST"])
 def signup_faculty():
     data = request.get_json()
-    name = data.get("name", "").strip()
+    fullname = data.get("fullname", "").strip()
     email = data.get("email", "").strip()
     password = data.get("password", "").strip()
 
-    if not name or not email or not password:
+    if not fullname or not email or not password:
         return jsonify({"error": "Missing required fields"}), 400
 
     try:
@@ -226,7 +226,7 @@ def faculty_login():
 
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
-    cursor.execute("SELECT id, name FROM users WHERE email = ? AND password = ? AND role = 'faculty'", (email, password))
+    cursor.execute("SELECT id, fullname FROM users WHERE email = ? AND password = ? AND role = 'faculty'", (email, password))
     user = cursor.fetchone()
     conn.close()
 
