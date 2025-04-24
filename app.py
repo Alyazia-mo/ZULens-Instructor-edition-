@@ -202,11 +202,11 @@ def login_user():
     conn.close()
 
     if user:
-        user_id, role, name, student_id = user
+        user_id, role, fullname, student_id = user
         session["user_id"] = user_id
         session["email"] = email
         session["role"] = role
-        session["username"] = name if role == "faculty" else email
+        session["username"] = fullname if role == "faculty" else email
         session["student_id"] = student_id if role == "student" else None
 
         if role == "faculty":
@@ -246,8 +246,8 @@ def logout():
 
 @app.route("/faculty/reviews")
 def get_faculty_reviews():
-    faculty_name = session.get("faculty_name")
-    if not faculty_name:
+    faculty_fullname = session.get("faculty_fullname")
+    if not faculty_fullname:
         return jsonify([])
 
     conn = sqlite3.connect(DATABASE_PATH)
@@ -256,7 +256,7 @@ def get_faculty_reviews():
         SELECT id, course, instructor, rating, review, sentiment, summary, flagged, user_id, grade 
         FROM reviews 
         WHERE instructor = ?
-    """, (faculty_name,))
+    """, (faculty_fullname,))
     rows = cursor.fetchall()
     conn.close()
 
@@ -300,14 +300,14 @@ def faculty_get_reviews():
     if "user_id" not in session or session.get("role") != "faculty":
         return jsonify({"error": "Unauthorized"}), 401
 
-    faculty_name = session.get("name")
+    faculty_fullname = session.get("fullname")
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
     cursor.execute("""
         SELECT id, student_id, course, rating, review, sentiment, summary
         FROM reviews
         WHERE instructor = ?
-    """, (faculty_name,))
+    """, (faculty_fullname,))
     rows = cursor.fetchall()
     conn.close()
 
@@ -442,7 +442,7 @@ def submit_review():
     # Notify faculty if the name matches and notifications are enabled
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
-    cursor.execute("SELECT email, email_notifications FROM faculty WHERE name = ?", (instructor,))
+    cursor.execute("SELECT email, email_notifications FROM faculty WHERE fullname = ?", (instructor,))
     faculty = cursor.fetchone()
     conn.close()
 
@@ -665,7 +665,7 @@ def init_db():
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT,
+            fullname TEXT,
             email TEXT UNIQUE NOT NULL,
             password TEXT NOT NULL,
             student_id TEXT,
