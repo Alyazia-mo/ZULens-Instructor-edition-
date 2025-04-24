@@ -153,11 +153,11 @@ def signup_student():
 @app.route("/faculty-signup", methods=["POST"])
 def signup_faculty():
     data = request.json
-    name = data.get("name")
+    fullname = data.get("fullname")
     email = data.get("email")
     password = data.get("password")
 
-    if not name or not email or not password:
+    if not fullname or not email or not password:
         return jsonify({"error": "Missing fields"}), 400
 
     conn = sqlite3.connect(DATABASE_PATH)
@@ -166,12 +166,12 @@ def signup_faculty():
     if cursor.fetchone():
         return jsonify({"error": "Email already registered"}), 409
 
-    cursor.execute("INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)",
-                   (name, email, password, "faculty"))
+    cursor.execute("INSERT INTO users (fullname, email, password, role) VALUES (?, ?, ?, ?)",
+                   (fullname, email, password, "faculty"))
     conn.commit()
     conn.close()
 
-    send_confirmation_email(email, name)
+    send_confirmation_email(email, fullname)
     return jsonify({"message": "Faculty account created!"}), 200
 
 @app.route("/student-login", methods=["POST"])
@@ -200,7 +200,7 @@ def login_faculty():
     email, password = data.get("email"), data.get("password")
     conn = sqlite3.connect(DATABASE_PATH)
     c = conn.cursor()
-    c.execute("SELECT id, name FROM users WHERE email = ? AND password = ? AND role = 'faculty'", (email, password))
+    c.execute("SELECT id, fullname FROM users WHERE email = ? AND password = ? AND role = 'faculty'", (email, password))
     result = c.fetchone()
     conn.close()
 
@@ -208,7 +208,7 @@ def login_faculty():
         session["user_id"] = result[0]
         session["email"] = email
         session["role"] = "faculty"
-        session["name"] = result[1]
+        session["fullname"] = result[1]
         return jsonify({"message": "Login successful"}), 200
     return jsonify({"error": "Invalid credentials"}), 401
 

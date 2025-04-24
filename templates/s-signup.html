@@ -19,8 +19,8 @@
         </div>
 
         <div class="mb-3">
-          <label for="zuid" class="form-label">ZU ID</label>
-          <input type="text" id="zuid" class="form-control" required pattern="\\d{9}" />
+          <label for="student_id" class="form-label">ZU ID</label>
+          <input type="text" id="student_id" name="student_id" pattern="^\d{9}$" required title="Please enter a 9-digit ZU ID">
           <small class="text-muted">Enter your 9-digit university ID (e.g., 202006771).</small>
         </div>
 
@@ -48,9 +48,9 @@
       e.preventDefault();
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value.trim();
-      const zuid = document.getElementById("zuid").value.trim();
+      const student_id = document.getElementById("student_id").value.trim();
 
-      if (!/^\d{9}$/.test(zuid)) {
+      if (!/^\d{9}$/.test(student_id)) {
         alert("⚠️ Please enter a valid 9-digit ZU ID.");
         return;
       }
@@ -63,7 +63,7 @@
       const res = await fetch("/student-signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, zuid })
+        body: JSON.stringify({ email, password, student_id})
       });
 
       const result = await res.json();
