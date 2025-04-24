@@ -180,7 +180,7 @@ def signup_faculty():
         cursor.execute("""
             INSERT INTO users (name, email, password, role)
             VALUES (?, ?, ?, ?)
-        """, (name, email, password, "faculty"))
+        """, (fullname, email, password, "faculty"))
 
         conn.commit()
         conn.close()
