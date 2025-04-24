@@ -31,7 +31,7 @@
             <li class="nav-item"><a class="nav-link" href="/submit-review-page">Submit a Review</a></li>
             <li class="nav-item"><a class="nav-link" href="/my-reviews">My Reviews</a></li>
           {% elif session.get('role') == 'faculty' %}
-            <li class="nav-item"><a class="nav-link" href="/faculty-dashboard">Faculty Dashboard</a></li>
+            <li class="nav-item"><a class="nav-link" href="/faculty/dashboard">Faculty Dashboard</a></li>
           {% endif %}
   
           {% if session.get('user_id') %}
