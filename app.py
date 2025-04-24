@@ -13,7 +13,7 @@ from openai import OpenAI
 
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-DATABASE_PATH = "/data/faculty_reviews.db"
+DATABASE_PATH = "faculty_reviews.db"
 
 
 nltk.download("vader_lexicon")
