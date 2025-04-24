@@ -199,7 +199,7 @@ def login_user():
 
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
-    cursor.execute("SELECT id, role, name, student_id FROM users WHERE email = ? AND password = ?", (email, password))
+    cursor.execute("SELECT id, role, fullname, student_id FROM users WHERE email = ? AND password = ?", (email, password))
     user = cursor.fetchone()
     conn.close()
 
