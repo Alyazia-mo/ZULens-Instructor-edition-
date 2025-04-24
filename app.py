@@ -178,7 +178,7 @@ def signup_faculty():
             return jsonify({"error": "Email already registered"}), 409
 
         cursor.execute("""
-            INSERT INTO users (name, email, password, role)
+            INSERT INTO users (fullname, email, password, role)
             VALUES (?, ?, ?, ?)
         """, (fullname, email, password, "faculty"))
 
