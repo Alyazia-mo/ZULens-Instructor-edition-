@@ -175,7 +175,7 @@ def signup_faculty():
     return jsonify({"message": "Faculty account created!"}), 200
 
 @app.route("/student-login", methods=["POST"])
-def login_user():
+def login_student():
     data = request.json
     email = data.get("email")
     password = data.get("password")
@@ -195,7 +195,7 @@ def login_user():
         return jsonify({"error": "Invalid credentials"}), 401
     
 @app.route("/faculty-login", methods=["POST"])
-def login_user():
+def login_faculty():
     data = request.json
     email = data.get("email")
     password = data.get("password")
