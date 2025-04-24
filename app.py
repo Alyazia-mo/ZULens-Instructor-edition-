@@ -13,7 +13,7 @@ from openai import OpenAI
 
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-DATABASE_PATH = "/data/faculty_reviews.db"
+DATABASE_PATH = "faculty_reviews.db"
 
 
 nltk.download("vader_lexicon")
@@ -167,27 +167,35 @@ def signup_student():
 
 @app.route("/faculty-signup", methods=["POST"])
 def signup_faculty():
-    data = request.json
-    fullname = data.get("fullname")
-    email = data.get("email")
-    password = data.get("password")
+    data = request.get_json()
+    name = data.get("name", "").strip()
+    email = data.get("email", "").strip()
+    password = data.get("password", "").strip()
 
-    if not fullname or not email or not password:
-        return jsonify({"error": "Missing fields"}), 400
+    if not name or not email or not password:
+        return jsonify({"error": "Missing required fields"}), 400
 
-    conn = sqlite3.connect(DATABASE_PATH)
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
-    if cursor.fetchone():
-        return jsonify({"error": "Email already registered"}), 409
+    try:
+        conn = sqlite3.connect(DATABASE_PATH)
+        cursor = conn.cursor()
 
-    cursor.execute("INSERT INTO users (fullname, email, password, role) VALUES (?, ?, ?, ?)",
-                   (fullname, email, password, "faculty"))
-    conn.commit()
-    conn.close()
+        cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
+        if cursor.fetchone():
+            return jsonify({"error": "Email already registered"}), 409
 
-    send_confirmation_email(email, fullname)
-    return jsonify({"message": "Faculty account created!"}), 200
+        cursor.execute("""
+            INSERT INTO users (name, email, password, role)
+            VALUES (?, ?, ?, ?)
+        """, (name, email, password, "faculty"))
+
+        conn.commit()
+        conn.close()
+
+        return jsonify({"message": "Faculty account created!"}), 200
+
+    except Exception as e:
+        print("Faculty signup error:", e)
+        return jsonify({"error": "Server error during signup"}), 500
 
 @app.route("/login-user", methods=["POST"])
 def login_user():
@@ -224,7 +232,7 @@ def faculty_login():
 
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
-    cursor.execute("SELECT id, name, role FROM users WHERE email = ? AND password = ? AND role = 'faculty'", (email, password))
+    cursor.execute("SELECT id, name FROM users WHERE email = ? AND password = ? AND role = 'faculty'", (email, password))
     user = cursor.fetchone()
     conn.close()
 
@@ -235,7 +243,7 @@ def faculty_login():
         session["email"] = email
         return jsonify({"message": "Login successful", "redirect": "/faculty-dashboard"}), 200
     else:
-        return jsonify({"error": "Invalid credentials"}), 401
+        return jsonify({"error": "Invalid credentials or not a faculty account"}), 401
 
 @app.route("/logout", methods=["POST"])
 def logout():
