@@ -60,7 +60,7 @@ def my_reviews():
     cursor.execute("SELECT * FROM reviews WHERE user_id = ?", (user_id,))
     reviews = cursor.fetchall()
     conn.close()
-    return render_template("my-reviews.html", reviews=reviews)
+    return render_template("my_reviews.html", reviews=reviews)
 
 @app.route("/student-signup")
 def student_signup_page():
@@ -88,6 +88,10 @@ def faculty_dashboard():
         return redirect(url_for("f-login.html"))
     return render_template("faculty_dashboard.html")
 
+@app.route("/logout", methods=["POST"])
+def logout():
+    session.clear()
+    return jsonify({"message": "Logged out", "redirect": "/"})
 
 # Email configuration (update with your real info)
 EMAIL_SENDER = "zulensorg@gmail.com"
@@ -239,10 +243,7 @@ def faculty_login():
     else:
         return jsonify({"error": "Invalid credentials or not a faculty account"}), 401
 
-@app.route("/logout", methods=["POST"])
-def logout():
-    session.clear()
-    return jsonify({"message": "Logged out", "redirect": "/"})
+
 
 # ---------- FACULTY DASHBOARD ROUTES ----------
 
