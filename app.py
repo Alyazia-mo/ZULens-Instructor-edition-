@@ -126,44 +126,38 @@ def send_confirmation_email(to_email, username):
         print("Email sending failed:", e)
 
 
-@app.route('/student-signup', methods=['POST'])
+@app.route("/student-signup", methods=["POST"])
 def signup_student():
     data = request.get_json()
     email = data.get("email", "").strip()
-    student_id = data.get("student_id", "").strip()
     password = data.get("password", "").strip()
-    role = "student"
+    student_id = data.get("student_id", "").strip()
 
-    # Validate inputs
-    if not email or not student_id or not password or len(student_id) != 9:
-        return jsonify({"error": "Please provide a valid email, 9-digit student ID, and password."}), 400
+    if not email or not password or not student_id:
+        return jsonify({"error": "Missing required fields"}), 400
 
     try:
         conn = sqlite3.connect(DATABASE_PATH)
         cursor = conn.cursor()
-
-        # Check if email already exists
         cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
         if cursor.fetchone():
-            return jsonify({"error": "Email already registered."}), 409
+            return jsonify({"error": "Email already registered"}), 409
 
-        # Insert student
         cursor.execute("""
-            INSERT INTO users (name, email, password, student_id, role)
-            VALUES (?, ?, ?, ?, ?)
-        """, (None, email, password, student_id, role))
+            INSERT INTO users (email, password, student_id, role)
+            VALUES (?, ?, ?, ?)
+        """, (email, password, student_id, "student"))
 
         conn.commit()
         conn.close()
 
-        # Send confirmation email (use email as username placeholder)
-        send_confirmation_email(email, email)
+        send_confirmation_email(email, student_id)
 
         return jsonify({"message": "Account created successfully!"}), 200
 
     except Exception as e:
-        print("Signup Error:", e)
-        return jsonify({"error": "Server error during signup."}), 500
+        print("Student signup error:", e)
+        return jsonify({"error": "Server error during signup"}), 500
 
 @app.route("/faculty-signup", methods=["POST"])
 def signup_faculty():
