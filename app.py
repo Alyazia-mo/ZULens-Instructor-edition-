@@ -155,7 +155,8 @@ def signup_student():
         conn.commit()
         conn.close()
 
-        send_confirmation_email(email, student_id)
+        username = email.split('@')[0]
+        send_confirmation_email(email, username)
 
         return jsonify({"message": "Account created successfully!"}), 200
 
@@ -445,7 +446,7 @@ def submit_review():
     # Notify faculty if the name matches and notifications are enabled
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
-    cursor.execute("SELECT email, email_notifications FROM faculty WHERE fullname = ?", (instructor,))
+    cursor.execute("SELECT email, email_notifications FROM users WHERE name = ? AND role = 'faculty'", (instructor,))
     faculty = cursor.fetchone()
     conn.close()
 
@@ -672,7 +673,9 @@ def init_db():
             email TEXT UNIQUE NOT NULL,
             password TEXT NOT NULL,
             student_id TEXT,
-            role TEXT
+            role TEXT,
+            email_notifications BOOLEAN DEFAULT 1
+
         )
     """)
 
