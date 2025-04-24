@@ -60,7 +60,7 @@
         return;
       }
 
-      const res = await fetch("/signup-user", {
+      const res = await fetch("/student-signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, zuid })
@@ -70,7 +70,7 @@
 
       if (res.ok) {
         alert("✅ " + result.message);
-        window.location.href = "/login";
+        window.location.href = "/student-login";
       } else {
         alert("❌ " + (result.error || "Something went wrong"));
       }

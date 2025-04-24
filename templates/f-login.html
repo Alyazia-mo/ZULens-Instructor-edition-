@@ -46,7 +46,7 @@
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value.trim();
 
-      const res = await fetch("/login-faculty", {
+      const res = await fetch("/faculty-login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password })
@@ -56,9 +56,9 @@
       const msgBox = document.getElementById("faculty-login-message");
 
       if (res.ok) {
-        msgBox.innerHTML = "✅ Logged in! Redirecting to your reviews...";
+        msgBox.innerHTML = "✅ Logged in! Redirecting to your dashboard...";
         msgBox.style.color = "green";
-        setTimeout(() => window.location.href = "/faculty-reviews", 1000);
+        setTimeout(() => window.location.href = "/faculty/dashboard", 1000);
       } else {
         msgBox.textContent = data.error || "❌ Invalid login";
         msgBox.style.color = "red";

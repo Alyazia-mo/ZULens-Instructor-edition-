@@ -13,7 +13,7 @@ from openai import OpenAI
 
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-DATABASE_PATH = "faculty_reviews.db"
+DATABASE_PATH = "/data/faculty_reviews.db"
 
 
 nltk.download("vader_lexicon")
@@ -675,8 +675,15 @@ def init_db():
         );
     """)
 
+    # Add revealed_grade column if it doesn't exist
+    try:
+        cursor.execute("ALTER TABLE reviews ADD COLUMN revealed_grade TEXT DEFAULT NULL;")
+    except sqlite3.OperationalError:
+        pass
+
     conn.commit()
     conn.close()
+
 init_db()
 
 if __name__ == "__main__":
