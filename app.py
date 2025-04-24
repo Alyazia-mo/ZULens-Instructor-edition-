@@ -255,25 +255,6 @@ def get_faculty_reviews():
     return jsonify(reviews)
 
 
-
-@app.route("/faculty/report-review/<int:review_id>", methods=["POST"])
-def report_review(review_id):
-    data = request.json
-    reason = data.get("reason", "").strip()
-
-    if not reason:
-        return jsonify({"error": "Reason required"}), 400
-
-    conn = sqlite3.connect(DATABASE_PATH)
-    cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO review_reports (review_id, reason, status) VALUES (?, ?, ?)
-    """, (review_id, reason, "Pending"))
-    conn.commit()
-    conn.close()
-
-    return jsonify({"message": "Review reported"}), 200
-
 # ---------- TONE CHECK ENDPOINT ----------
 
 @app.route("/check-tone", methods=["POST"])
