@@ -24,12 +24,6 @@ CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
 sia = SentimentIntensityAnalyzer()
 
-@app.before_request
-def redirect_to_www():
-    host = request.host
-    if host == "zulens.org":
-        return redirect("https://www.zulens.org" + request.path, code=301)
-
 # ---------- PAGE ROUTES ----------
 
 @app.route('/')
@@ -82,7 +76,7 @@ def faculty_login_page():
 def role_page():
     return render_template("role.html")
 
-@app.route("/faculty-dashboard")
+@app.route("/faculty/dashboard")
 def faculty_dashboard():
     if "user_id" not in session or session.get("role") != "faculty":
         return redirect(url_for("f-login.html"))
