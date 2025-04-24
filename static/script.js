@@ -65,6 +65,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const response = await fetch("/submit-review", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify(reviewData)
         });
 
@@ -89,39 +90,28 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     });
   }
-
-  // Logout Button
-  const logoutBtn = document.getElementById("logout-btn");
-
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", async () => {
+ // logout
+  document.getElementById("logout-btn")?.addEventListener("click", async () => {
+    try {
       const res = await fetch("/logout", {
-        method: "POST"
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        }
       });
   
       const data = await res.json();
-  
-      if (data.redirect) {
-        // Update navbar UI without reload
-        const welcomeText = document.querySelector(".navbar-text");
-        const loginBtn = document.querySelector(".btn.btn-light.btn-sm");
-        if (welcomeText) welcomeText.style.display = "none";
-        if (logoutBtn) logoutBtn.style.display = "none";
-  
-        if (loginBtn) {
-          loginBtn.style.display = "inline-block";
-        } else {
-          const loginLink = document.createElement("a");
-          loginLink.href = "/login";
-          loginLink.textContent = "Login";
-          loginLink.className = "btn btn-sm ms-2 login-btn";
-          document.querySelector(".navbar-nav").appendChild(loginLink);
-        }
-  
+      if (res.ok && data.redirect) {
         window.location.href = data.redirect;
+      } else {
+        alert("Logout failed.");
       }
-    });
-  }
+    } catch (err) {
+      console.error("Logout error:", err);
+      alert("Something went wrong.");
+    }
+  });
+  
   
   // Chatbot
   const chatbotToggle = document.getElementById("chatbot-toggle");
