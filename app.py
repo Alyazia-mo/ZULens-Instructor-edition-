@@ -126,29 +126,44 @@ def send_confirmation_email(to_email, username):
         print("Email sending failed:", e)
 
 
-@app.route("/student-signup", methods=["POST"])
+@app.route('/student-signup', methods=['POST'])
 def signup_student():
-    data = request.json
-    email = data.get("email")
-    student_id = data.get("student_id")
-    password = data.get("password")
+    data = request.get_json()
+    email = data.get("email", "").strip()
+    student_id = data.get("student_id", "").strip()
+    password = data.get("password", "").strip()
+    role = "student"
 
-    if not email or not student_id or not password:
-        return jsonify({"error": "Missing fields"}), 400
+    # Validate inputs
+    if not email or not student_id or not password or len(student_id) != 9:
+        return jsonify({"error": "Please provide a valid email, 9-digit student ID, and password."}), 400
 
-    conn = sqlite3.connect(DATABASE_PATH)
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
-    if cursor.fetchone():
-        return jsonify({"error": "Email already registered"}), 409
+    try:
+        conn = sqlite3.connect(DATABASE_PATH)
+        cursor = conn.cursor()
 
-    cursor.execute("INSERT INTO users (email, student_id, password, role) VALUES (?, ?, ?, ?)",
-                   (email, student_id, password, "student"))
-    conn.commit()
-    conn.close()
+        # Check if email already exists
+        cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
+        if cursor.fetchone():
+            return jsonify({"error": "Email already registered."}), 409
 
-    send_confirmation_email(email)
-    return jsonify({"message": "Account created! Check your email."}), 200
+        # Insert student
+        cursor.execute("""
+            INSERT INTO users (name, email, password, student_id, role)
+            VALUES (?, ?, ?, ?, ?)
+        """, (None, email, password, student_id, role))
+
+        conn.commit()
+        conn.close()
+
+        # Send confirmation email (use email as username placeholder)
+        send_confirmation_email(email, email)
+
+        return jsonify({"message": "Account created successfully!"}), 200
+
+    except Exception as e:
+        print("Signup Error:", e)
+        return jsonify({"error": "Server error during signup."}), 500
 
 @app.route("/faculty-signup", methods=["POST"])
 def signup_faculty():
@@ -174,43 +189,32 @@ def signup_faculty():
     send_confirmation_email(email, fullname)
     return jsonify({"message": "Faculty account created!"}), 200
 
-@app.route("/student-login", methods=["POST"])
-def login_student():
-    data = request.json
-    email = data.get("email")
-    password = data.get("password")
+@app.route("/login-user", methods=["POST"])
+def login_user():
+    data = request.get_json()
+    email = data.get("email", "").strip()
+    password = data.get("password", "").strip()
 
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
-    cursor.execute("SELECT id, role FROM users WHERE email = ? AND password = ?", (email, password))
-    result = cursor.fetchone()
+    cursor.execute("SELECT id, role, name, student_id FROM users WHERE email = ? AND password = ?", (email, password))
+    user = cursor.fetchone()
     conn.close()
 
-    if result:
-        session["user_id"] = result[0]
+    if user:
+        user_id, role, name, student_id = user
+        session["user_id"] = user_id
         session["email"] = email
-        session["role"] = result[1]
-        return jsonify({"message": "Login successful", "role": result[1]}), 200
+        session["role"] = role
+        session["username"] = name if role == "faculty" else email
+        session["student_id"] = student_id if role == "student" else None
+
+        if role == "faculty":
+            return jsonify({"message": "Faculty login successful", "redirect": "/faculty-dashboard"}), 200
+        else:
+            return jsonify({"message": "Student login successful", "redirect": "/my-reviews"}), 200
     else:
         return jsonify({"error": "Invalid credentials"}), 401
-    
-@app.route("/faculty-login", methods=["POST"])
-def login_faculty():
-    data = request.json
-    email, password = data.get("email"), data.get("password")
-    conn = sqlite3.connect(DATABASE_PATH)
-    c = conn.cursor()
-    c.execute("SELECT id, fullname FROM users WHERE email = ? AND password = ? AND role = 'faculty'", (email, password))
-    result = c.fetchone()
-    conn.close()
-
-    if result:
-        session["user_id"] = result[0]
-        session["email"] = email
-        session["role"] = "faculty"
-        session["fullname"] = result[1]
-        return jsonify({"message": "Login successful"}), 200
-    return jsonify({"error": "Invalid credentials"}), 401
 
 @app.route("/logout", methods=["POST"])
 def logout():

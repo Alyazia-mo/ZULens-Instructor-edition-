@@ -58,11 +58,14 @@
       if (res.ok) {
         messageBox.innerHTML = "✅ Logged in! Redirecting...";
         messageBox.style.color = "green";
-        setTimeout(() => window.location.href = "/my-reviews", 1000);
+        setTimeout(() => {
+          window.location.href = data.redirect;
+        }, 1000);
       } else {
         messageBox.textContent = data.error || "❌ Invalid login";
         messageBox.style.color = "red";
       }
+
     });
 
     document.getElementById("togglePassword").addEventListener("click", function () {

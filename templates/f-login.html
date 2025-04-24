@@ -56,12 +56,14 @@
       const msgBox = document.getElementById("faculty-login-message");
 
       if (res.ok) {
-        msgBox.innerHTML = "✅ Logged in! Redirecting to your dashboard...";
-        msgBox.style.color = "green";
-        setTimeout(() => window.location.href = "/faculty/dashboard", 1000);
+        messageBox.innerHTML = "✅ Logged in! Redirecting...";
+        messageBox.style.color = "green";
+        setTimeout(() => {
+          window.location.href = data.redirect;
+        }, 1000);
       } else {
-        msgBox.textContent = data.error || "❌ Invalid login";
-        msgBox.style.color = "red";
+        messageBox.textContent = data.error || "❌ Invalid login";
+        messageBox.style.color = "red";
       }
     });
 
