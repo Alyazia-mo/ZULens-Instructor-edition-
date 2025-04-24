@@ -91,26 +91,27 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
  // logout
-  document.getElementById("logout-btn")?.addEventListener("click", async () => {
-    try {
-      const res = await fetch("/logout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        }
-      });
-  
-      const data = await res.json();
-      if (res.ok && data.redirect) {
-        window.location.href = data.redirect;
-      } else {
-        alert("Logout failed.");
+ document.getElementById("logout-btn")?.addEventListener("click", async () => {
+  try {
+    const res = await fetch("/logout", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
       }
-    } catch (err) {
-      console.error("Logout error:", err);
-      alert("Something went wrong.");
+    });
+
+    const data = await res.json();
+    if (res.ok && data.redirect) {
+      window.location.href = data.redirect;
+    } else {
+      alert("Logout failed.");
     }
-  });
+  } catch (err) {
+    console.error("Logout error:", err);
+    alert("Something went wrong.");
+  }
+});
+
   
   
   // Chatbot

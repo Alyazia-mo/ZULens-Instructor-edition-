@@ -36,9 +36,7 @@
   
           {% if session.get('user_id') %}
             <span class="navbar-text me-3">Welcome, {{ session['email'].split('@')[0] }}!</span>
-            <form method="POST" action="/logout" class="d-inline">
-                <button id="logout-btn" type="submit" class="btn btn-outline-light btn-sm">Logout</button>
-            </form>
+            <button id="logout-btn" class="btn btn-outline-light btn-sm">Logout</button>
           {% else %}
             <a class="btn btn-sm login-btn" href="/role">Login</a>
           {% endif %}
