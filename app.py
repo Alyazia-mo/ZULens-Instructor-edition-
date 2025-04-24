@@ -217,7 +217,7 @@ def login_user():
         session["student_id"] = student_id if role == "student" else None
 
         if role == "faculty":
-            return jsonify({"message": "Faculty login successful", "redirect": "/faculty-dashboard"}), 200
+            return jsonify({"message": "Faculty login successful", "redirect": "/faculty/dashboard"}), 200
         else:
             return jsonify({"message": "Student login successful", "redirect": "/my-reviews"}), 200
     else:
@@ -299,33 +299,36 @@ def check_tone():
     return jsonify({"warning": warning})
 
 # ---------- FACULTY REVIEWS ----------
-@app.route("/faculty/get-my-reviews", methods=["GET"])
+@app.route("/faculty/get-my-reviews")
 def faculty_get_reviews():
-    if "user_id" not in session or session.get("role") != "faculty":
-        return jsonify({"error": "Unauthorized"}), 401
+    if session.get("role") != "faculty":
+        return jsonify([])
 
-    faculty_fullname = session.get("fullname")
+    faculty_name = session.get("username")
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT id, student_id, course, rating, review, sentiment, summary
+        SELECT reviews.id, course, rating, review, sentiment, summary, users.student_id
         FROM reviews
+        JOIN users ON users.id = reviews.user_id
         WHERE instructor = ?
-    """, (faculty_fullname,))
+    """, (faculty_name,))
     rows = cursor.fetchall()
     conn.close()
 
-    reviews = [{
-        "id": row[0],
-        "student_id": row[1],
-        "course": row[2],
-        "rating": row[3],
-        "review": row[4],
-        "sentiment": row[5],
-        "summary": row[6]
-    } for row in rows]
+    return jsonify([
+        {
+            "id": r[0],
+            "course": r[1],
+            "rating": r[2],
+            "review": r[3],
+            "sentiment": r[4],
+            "summary": r[5],
+            "student_id": r[6]
+        }
+        for r in rows
+    ])
 
-    return jsonify(reviews), 200
 
 @app.route("/faculty/reveal-grade", methods=["POST"])
 def reveal_grade():
