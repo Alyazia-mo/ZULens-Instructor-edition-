@@ -50,11 +50,17 @@ def submit_review_page():
 def admin_panel():
     return render_template('admin_panel.html')
 
-@app.route('/my-reviews')
-def my_reviews_page():
-    if "user_id" not in session:
-        return redirect(url_for("s-login.html"))
-    return render_template('my_reviews.html')
+@app.route("/my-reviews")
+def my_reviews():
+    if session.get("role") != "student":
+        return redirect("/") 
+    user_id = session.get("user_id")
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM reviews WHERE user_id = ?", (user_id,))
+    reviews = cursor.fetchall()
+    conn.close()
+    return render_template("my-reviews.html", reviews=reviews)
 
 @app.route("/student-signup")
 def student_signup_page():
