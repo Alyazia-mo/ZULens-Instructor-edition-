@@ -1,0 +1,128 @@
+/* NAVBAR */
+.navbar {
+  background-color: #5A002B !important;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  height: auto;
+  overflow: visible;
+}
+
+.navbar-brand img.logo {
+  height: 100px;
+  width: auto;
+  padding: 0;
+  margin: 0;
+}
+
+/* Align hamburger menu to the right on mobile */
+.navbar-toggler {
+  margin-left: auto;
+  margin-right: 0;
+}
+
+/* Navbar links */
+.navbar-nav {
+  gap: 30px;
+}
+
+.navbar-nav .nav-link {
+  color: #DADADA !important;
+  font-weight: 500;
+  font-size: 16px;
+  transition: color 0.3s ease;
+  text-align: center;
+}
+
+.navbar-nav .nav-link:hover {
+  color: #AD974F !important;
+}
+
+/* Login button (primary or warning) */
+.navbar-nav .btn-primary,
+.navbar-nav .btn-warning,
+.btn-warning {
+  background-color: #AD974F !important;
+  color: #5A002B !important;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+}
+
+.navbar-nav .btn-warning:hover,
+.btn-warning:hover {
+  background-color: #916F33 !important;
+  color: white !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .navbar-nav {
+    flex-direction: column !important;
+    align-items: center;
+    gap: 15px;
+  }
+
+  .navbar-brand img.logo {
+    height: 80px;
+  }
+
+  .navbar-collapse {
+    text-align: center;
+  }
+
+  .navbar-toggler {
+    margin-left: auto !important;
+    margin-right: 0 !important;
+  }
+}
+
+.login-btn {
+  background-color: #AD974F;
+  color: white;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 5px;
+  font-weight: bold;
+}
+
+/* chatbot styling */
+
+.bg-maroon {
+  background-color: #5A002B !important;
+}
+
+.btn-maroon {
+  background-color: #5A002B;
+  color: white;
+  border: none;
+}
+
+.btn-maroon:hover {
+  background-color: #75003c;
+}
+
+#chatbot-modal .modal-header {
+  padding: 10px 15px;
+}
+
+#chatbot-modal .modal-body {
+  background-color: #f8f9fa;
+}
+
+#chat-log p {
+  margin: 0 0 8px;
+  line-height: 1.4;
+}
+#chat-log strong {
+  color: #5A002B;
+}
+
+footer {
+  background-color: #5A002B;
+  color: white;
+  text-align: center;
+  padding: 15px 0;
+  font-size: 14px;
+  margin-top: 40px;
+  border-top: 2px solid #440021; /* optional depth effect */
+}
