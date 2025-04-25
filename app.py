@@ -185,7 +185,7 @@ def faculty_signup():
         conn.close()
         return jsonify({"error": "Email already exists"}), 409
 
-    # Insert new user with role "faculty"
+    # Insert new faculty user
     cursor.execute(
         "INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)",
         (username, email, password, "faculty"),
@@ -193,10 +193,11 @@ def faculty_signup():
     conn.commit()
     conn.close()
 
-    # ✅ Send confirmation email to faculty as well
+    # ✅ Send confirmation email
     send_confirmation_email(email, username)
 
     return jsonify({"message": "Signup successful. Confirmation email sent!"}), 200
+
 
 
 @app.route("/login-user", methods=["POST"])
