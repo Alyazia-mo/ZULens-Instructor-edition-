@@ -93,7 +93,6 @@ def student_signup():
     send_confirmation_email(email, username)
 
     return jsonify({"message": "Signup successful. Confirmation email sent!"}), 200
-openai.api_key = os.getenv("OPENAI_API_KEY")
 EMAIL_SENDER = os.getenv("EMAIL_SENDER")
 EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
 EMAIL_SMTP_SERVER = "smtp.gmail.com"
@@ -130,41 +129,6 @@ def send_confirmation_email(to_email, username):
     except Exception as e:
         print("Email sending failed:", e)
 
-
-
-@app.route("/student-signup", methods=["POST"])
-def signup_student():
-    data = request.get_json()
-    email = data.get("email", "").strip()
-    password = data.get("password", "").strip()
-    student_id = data.get("student_id", "").strip()
-
-    if not email or not password or not student_id:
-        return jsonify({"error": "Missing required fields"}), 400
-
-    try:
-        conn = sqlite3.connect(DATABASE_PATH)
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
-        if cursor.fetchone():
-            return jsonify({"error": "Email already registered"}), 409
-
-        cursor.execute("""
-            INSERT INTO users (email, password, student_id, role)
-            VALUES (?, ?, ?, ?)
-        """, (email, password, student_id, "student"))
-
-        conn.commit()
-        conn.close()
-
-        username = email.split('@')[0]
-        send_confirmation_email(email, username)
-
-        return jsonify({"message": "Account created successfully!"}), 200
-
-    except Exception as e:
-        print("Student signup error:", e)
-        return jsonify({"error": "Server error during signup"}), 500
 
 @app.route("/faculty-signup", methods=["POST"])
 def faculty_signup():
