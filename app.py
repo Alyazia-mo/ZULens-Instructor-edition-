@@ -365,7 +365,8 @@ def reveal_grade():
     conn.commit()
     conn.close()
 
-    return jsonify({"message": "Grade revealed"}), 200
+    return jsonify({"message": "Grade revealed", "review_id": review_id, "grade": grade}), 200
+
 
 @app.route("/faculty/report-review", methods=["POST"])
 def report_review():
