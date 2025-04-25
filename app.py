@@ -176,25 +176,33 @@ def signup_faculty():
         conn = sqlite3.connect(DATABASE_PATH)
         cursor = conn.cursor()
 
+        # Check duplicate
         cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
         if cursor.fetchone():
+            conn.close()
             return jsonify({"error": "Email already registered"}), 409
 
+        # Insert new faculty user
         cursor.execute("""
             INSERT INTO users (fullname, email, password, role)
             VALUES (?, ?, ?, ?)
         """, (fullname, email, password, "faculty"))
 
-       conn.commit()
-       conn.close()
+        # Commit and close the DB connection
+        conn.commit()
+        conn.close()
 
-       send_confirmation_email(email, fullname)
+        # Send confirmation email
+        send_confirmation_email(email, fullname)
 
-       return jsonify({"message": "Faculty account created! Confirmation email sent."}), 200
+        return jsonify({
+            "message": "Faculty account created! Confirmation email sent."
+        }), 200
 
     except Exception as e:
         print("Faculty signup error:", e)
         return jsonify({"error": "Server error during signup"}), 500
+
 
 @app.route("/login-user", methods=["POST"])
 def login_user():
