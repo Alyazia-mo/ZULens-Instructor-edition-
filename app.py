@@ -200,7 +200,8 @@ def signup_faculty():
         conn.close()
 
         # Send confirmation email
-        send_confirmation_email(email, fullname)
+        prof_name = f"Prof. {fullname}"
+        send_confirmation_email(email, prof_name)
 
         return jsonify({
             "message": "Faculty account created! Confirmation email sent."
