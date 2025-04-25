@@ -543,8 +543,9 @@ def get_my_reviews():
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT id, course, instructor, rating, review, sentiment, summary, flagged 
-        FROM reviews WHERE user_id = ?
+        SELECT id, course, instructor, rating, review, sentiment, summary, flagged, revealed_grade 
+        FROM reviews 
+        WHERE user_id = ?
     """, (user_id,))
     rows = cursor.fetchall()
     conn.close()
@@ -557,10 +558,12 @@ def get_my_reviews():
         "review": row[4],
         "sentiment": row[5],
         "summary": row[6],
-        "flagged": bool(row[7])
+        "flagged": bool(row[7]),
+        "revealed_grade": row[8]  # ✅ Now included in the JSON response
     } for row in rows]
 
     return jsonify(reviews)
+
 
 @app.route("/delete-review-by-id", methods=["POST"])
 def delete_review_by_id():
