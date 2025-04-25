@@ -407,102 +407,48 @@ def toggle_notifications():
 
 # ---------- REVIEWS ----------
 
-@app.route('/submit-review', methods=['POST'])
-def submit_review():
-    user_id = session.get("user_id")
-    if not user_id:
-        return jsonify({"error": "Unauthorized"}), 401
+# After inserting review, send email to matching faculty if found
+conn = sqlite3.connect(DATABASE_PATH)
+cursor = conn.cursor()
 
-    data = request.json
-    course = data.get("course", "").replace(" ", "").replace("-", "").upper()
-    raw_instructor = data.get("instructor", "").strip()
-    instructor = "Prof. " + " ".join([part.capitalize() for part in raw_instructor.split()])
-    review = data.get("review", "").strip()
-    rating = int(data.get("rating", 3))
+cursor.execute("""
+    SELECT email, email_notifications 
+    FROM users 
+    WHERE fullname = ? AND role = 'faculty'
+""", (instructor,))
+faculty = cursor.fetchone()
+conn.close()
 
-    if not course or not instructor or not review:
-        return jsonify({"error": "Missing fields"}), 400
+if faculty and faculty[1]:  # if found and notifications are enabled
+    faculty_email = faculty[0]
 
-    prompt = f"""
-    Analyze the following student review and return:
-    1. The overall sentiment as Positive, Negative, or Neutral.
-    2. A short summary of the review mentioning the course and instructor name.
+    subject = "🔔 New Review Submitted on ZULens"
+    body = f"""
+    Hello {instructor},
 
-    Course ID: {course}
-    Instructor: {instructor}
-    Rating: {rating} / 5
-    Review: {review}
+    A new anonymous review mentioning you was just submitted on ZULens.
 
-    Respond in this JSON format:
-    {{"sentiment": "...", "summary": "..."}}
+    Log in to your Faculty Dashboard to view it:
+    https://www.zulens.org/faculty/dashboard
+
+    — ZULens Team
     """
 
     try:
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.3
-        )
-        content = response.choices[0].message.content.strip()
-        sentiment_data = json.loads(content)
-        sentiment = sentiment_data["sentiment"]
-        summary = sentiment_data["summary"]
+        msg = MIMEText(body)
+        msg["Subject"] = subject
+        msg["From"] = EMAIL_SENDER
+        msg["To"] = faculty_email
+
+        server = smtplib.SMTP(EMAIL_SMTP_SERVER, EMAIL_PORT)
+        server.starttls()
+        server.login(EMAIL_SENDER, EMAIL_PASSWORD)
+        server.sendmail(EMAIL_SENDER, faculty_email, msg.as_string())
+        server.quit()
+        print("✅ Faculty notification sent.")
     except Exception as e:
-        print("GPT error:", e)
-        sentiment = "Neutral"
-        summary = "Summary unavailable due to error."
+        print("❌ Faculty email failed:", e)
 
-    flagged = 1 if sentiment.lower() == "negative" and rating <= 2 else 0
-
-    conn = sqlite3.connect(DATABASE_PATH)
-    cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO reviews (course, instructor, rating, review, sentiment, summary, flagged, user_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    """, (course, instructor, rating, review, sentiment, summary, flagged, user_id))
-    conn.commit()
-    conn.close()
-    
-    # Notify faculty if the name matches and notifications are enabled
-    conn = sqlite3.connect(DATABASE_PATH)
-    cursor = conn.cursor()
-    cursor.execute("SELECT email, email_notifications FROM users WHERE fullname = ? AND role = 'faculty'", (instructor,))
-    faculty = cursor.fetchone()
-    conn.close()
-
-    if faculty and faculty[1] == 1:  # notifications are on
-        faculty_email = faculty[0]
-        subject = "🔔 New Review Submitted on ZULens"
-        body = f"""Hello {instructor},
-
-    A new anonymous review mentioning you has been submitted on ZULens.
-
-    Please log in to your Faculty Dashboard to view it:
-    🔗 https://www.zulens.org/faculty/dashboard
-
-    -- ZULens Team
-    """
-
-        try:
-            msg = MIMEText(body)
-            msg["Subject"] = subject
-            msg["From"] = EMAIL_SENDER
-            msg["To"] = faculty_email
-
-            server = smtplib.SMTP(EMAIL_SMTP_SERVER, EMAIL_PORT)
-            server.starttls()
-            server.login(EMAIL_SENDER, EMAIL_PASSWORD)
-            server.sendmail(EMAIL_SENDER, faculty_email, msg.as_string())
-            server.quit()
-        except Exception as e:
-            print("❌ Faculty email failed:", e)
-
-    return jsonify({
-        "message": "Review submitted successfully",
-        "sentiment": sentiment,
-        "summary": summary,
-        "flagged": bool(flagged)
-    })
 
 
 
