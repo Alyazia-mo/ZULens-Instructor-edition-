@@ -131,8 +131,8 @@ def send_confirmation_email(to_email, username):
 @app.route("/student-signup", methods=["POST"])
 def signup_student():
     data = request.get_json()
-    email = data.get("email", "").strip()
-    password = data.get("password", "").strip()
+    email      = data.get("email",      "").strip()
+    password   = data.get("password",   "").strip()
     student_id = data.get("student_id", "").strip()
 
     if not email or not password or not student_id:
@@ -141,22 +141,29 @@ def signup_student():
     try:
         conn = sqlite3.connect(DATABASE_PATH)
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
+
+        # Check for existing user
+        cursor.execute("SELECT id FROM users WHERE email = ?", (email,))
         if cursor.fetchone():
+            conn.close()
             return jsonify({"error": "Email already registered"}), 409
 
+        # Insert new student user
         cursor.execute("""
             INSERT INTO users (email, password, student_id, role)
-            VALUES (?, ?, ?, ?)
-        """, (email, password, student_id, "student"))
+            VALUES (?, ?, ?, 'student')
+        """, (email, password, student_id))
 
         conn.commit()
         conn.close()
 
-        username = email.split('@')[0]
+        # Send confirmation email to the new student
+        username = email.split("@")[0]
         send_confirmation_email(email, username)
 
-        return jsonify({"message": "Account created successfully!"}), 200
+        return jsonify({
+            "message": "Student account created! Confirmation email sent."
+        }), 200
 
     except Exception as e:
         print("Student signup error:", e)
