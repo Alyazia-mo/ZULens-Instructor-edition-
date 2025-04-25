@@ -185,10 +185,12 @@ def signup_faculty():
             VALUES (?, ?, ?, ?)
         """, (fullname, email, password, "faculty"))
 
-        conn.commit()
-        conn.close()
+       conn.commit()
+       conn.close()
 
-        return jsonify({"message": "Faculty account created!"}), 200
+       send_confirmation_email(email, fullname)
+
+       return jsonify({"message": "Faculty account created! Confirmation email sent."}), 200
 
     except Exception as e:
         print("Faculty signup error:", e)
