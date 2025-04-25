@@ -212,17 +212,17 @@ def signup_faculty():
         return jsonify({"error": "Server error during signup"}), 500
 
 
+
 @app.route("/login-user", methods=["POST"])
 def login_user():
-    payload = request.get_json(silent=True) or request.form
-    email    = payload.get("email",   "").strip()
-    password = payload.get("password","").strip()
+    email = request.form.get("email", "").strip()
+    password = request.form.get("password", "").strip()
 
-    conn   = sqlite3.connect(DATABASE_PATH)
+    conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
     cursor.execute(
-      "SELECT id, role, fullname, student_id FROM users WHERE email=? AND password=?",
-      (email, password)
+        "SELECT id, role, fullname, student_id FROM users WHERE email=? AND password=?",
+        (email, password)
     )
     user = cursor.fetchone()
     conn.close()
@@ -230,7 +230,14 @@ def login_user():
     if not user:
         return jsonify({"error": "Invalid credentials"}), 401
 
-    # ... set session and redirect as before ...
+    user_id, role, fullname, student_id = user
+    session["user_id"] = user_id
+    session["email"] = email
+    session["role"] = role
+    session["username"] = fullname if role == "faculty" else email
+    session["student_id"] = student_id if role == "student" else None
+
+    return jsonify({"message": "Login successful", "redirect": "/my-reviews" if role == "student" else "/faculty/dashboard"}), 200
 
 @app.route("/faculty-login", methods=["POST"])
 def faculty_login():
