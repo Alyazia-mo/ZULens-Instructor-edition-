@@ -457,53 +457,50 @@ def submit_review():
     flagged = 1 if sentiment.lower() == "negative" and rating <= 2 else 0
 
     # Insert into DB
-    conn = sqlite3.connect(DATABASE_PATH)
-    cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO reviews (course, instructor, rating, review, sentiment, summary, flagged, user_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    """, (course, instructor, rating, review, sentiment, summary, flagged, user_id))
-    conn.commit()
+   # Notify faculty via email if they exist and have notifications enabled
+conn = sqlite3.connect(DATABASE_PATH)
+cursor = conn.cursor()
+cursor.execute("""
+    SELECT email, email_notifications 
+    FROM users 
+    WHERE fullname = ? AND role = 'faculty'
+""", (instructor,))
+faculty = cursor.fetchone()
+conn.close()
 
-    # Check for faculty notification
-    cursor.execute("""
-        SELECT email, email_notifications 
-        FROM users 
-        WHERE fullname = ? AND role = 'faculty'
-    """, (instructor,))
-    faculty = cursor.fetchone()
-    conn.close()
+if faculty and faculty[1]:  # if faculty exists and email_notifications is enabled
+    faculty_email = faculty[0]
 
-    if faculty and faculty[1]:  # if found and notifications are enabled
-        faculty_email = faculty[0]
+    subject = "🔔 New Review Submitted About You on ZULens"
+    body = f"""
+    Hello {instructor},
 
-        subject = "🔔 New Review Submitted on ZULens"
-        body = f"""
-        Hello {instructor},
+    A new anonymous review was submitted that mentions you on ZULens.
 
-        A new anonymous review mentioning you was just submitted on ZULens.
+    ➤ Course: {course}  
+    ➤ Rating: {rating}  
+    ➤ Review: "{review}"
 
-        Log in to your Faculty Dashboard to view it:
-        https://www.zulens.org/faculty/dashboard
+    You can view this and respond (if needed) by logging into your Faculty Dashboard:
+    https://www.zulens.org/faculty/dashboard
 
-        — ZULens Team
-        """
+    — ZULens Team
+    """
 
-        try:
-            print("➡ Sending email to:", faculty_email)
-            msg = MIMEText(body)
-            msg["Subject"] = subject
-            msg["From"] = EMAIL_SENDER
-            msg["To"] = faculty_email
+    try:
+        msg = MIMEText(body)
+        msg["Subject"] = subject
+        msg["From"] = EMAIL_SENDER
+        msg["To"] = faculty_email
 
-            server = smtplib.SMTP(EMAIL_SMTP_SERVER, EMAIL_PORT)
-            server.starttls()
-            server.login(EMAIL_SENDER, EMAIL_PASSWORD)
-            server.sendmail(EMAIL_SENDER, faculty_email, msg.as_string())
-            server.quit()
-            print("✅ Faculty notification sent.")
-        except Exception as e:
-            print("❌ Faculty email failed:", e)
+        server = smtplib.SMTP(EMAIL_SMTP_SERVER, EMAIL_PORT)
+        server.starttls()
+        server.login(EMAIL_SENDER, EMAIL_PASSWORD)
+        server.sendmail(EMAIL_SENDER, faculty_email, msg.as_string())
+        server.quit()
+        print("✅ Faculty email sent to:", faculty_email)
+    except Exception as e:
+        print("❌ Failed to send faculty email:", e)
 
     return jsonify({
         "message": "Review submitted successfully",
