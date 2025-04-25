@@ -1,3 +1,15 @@
+import os
+from flask import Flask, request, jsonify, render_template, session, redirect, url_for
+from flask_cors import CORS
+import sqlite3
+import nltk
+from nltk.sentiment import SentimentIntensityAnalyzer
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import json
+from openai import OpenAI
+
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 DATABASE_PATH = "faculty_reviews.db"
 
@@ -708,3 +720,5 @@ init_db()
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
+
