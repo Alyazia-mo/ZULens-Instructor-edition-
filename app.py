@@ -254,7 +254,7 @@ def faculty_login():
 
     if user:
         session["user_id"] = user[0]
-        session["username"] = user[1]
+        session["username"] = "Prof. " + user[1]
         session["role"] = "faculty"
         session["email"] = email
         return jsonify({"message": "Login successful", "redirect": "/faculty/dashboard"}), 200
