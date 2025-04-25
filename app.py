@@ -230,7 +230,7 @@ def login_user():
         session["user_id"] = user_id
         session["email"] = email
         session["role"] = role
-        session["username"] = fullname if role == "faculty" else email
+        session["username"] = "Prof. " + fullname if role == "faculty" else email
         session["student_id"] = student_id if role == "student" else None
 
         if role == "faculty":
