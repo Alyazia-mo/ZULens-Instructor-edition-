@@ -321,14 +321,15 @@ def faculty_get_reviews():
     if session.get("role") != "faculty":
         return jsonify([])
 
-    faculty_name = session.get("username")
+    faculty_name = session.get("username")  # E.g. "Maryam Alshamsi" or "Prof. Maryam Alshamsi"
+
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
     cursor.execute("""
         SELECT reviews.id, course, rating, review, sentiment, summary, users.student_id
         FROM reviews
         JOIN users ON users.id = reviews.user_id
-        WHERE instructor = ?
+        WHERE LOWER(REPLACE(instructor, 'prof. ', '')) = LOWER(REPLACE(?, 'prof. ', ''))
     """, (faculty_name,))
     rows = cursor.fetchall()
     conn.close()
@@ -345,7 +346,6 @@ def faculty_get_reviews():
         }
         for r in rows
     ])
-
 
 @app.route("/faculty/reveal-grade", methods=["POST"])
 def reveal_grade():
