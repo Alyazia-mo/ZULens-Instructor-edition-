@@ -62,42 +62,43 @@ def my_reviews():
     conn.close()
     return render_template("my_reviews.html", reviews=reviews)
 
-@app.route("/student-signup")
-def student_signup_page():
-    return render_template("s-signup.html")
+@app.route("/student-signup", methods=["POST"])
+def student_signup():
+    data = request.get_json()
+    username = data.get("username")
+    email = data.get("email")
+    password = data.get("password")
 
-@app.route("/student-login")
-def student_login_page():
-    return render_template("s-login.html")
+    if not (username and email and password):
+        return jsonify({"error": "Missing fields"}), 400
 
-@app.route("/faculty-signup")
-def faculty_signup_page():
-    return render_template("f-signup.html")
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
 
-@app.route("/faculty-login")
-def faculty_login_page():
-    return render_template("f-login.html")
+    # Check if email already exists
+    cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
+    if cursor.fetchone():
+        conn.close()
+        return jsonify({"error": "Email already exists"}), 409
 
-@app.route("/role")
-def role_page():
-    return render_template("role.html")
+    # Insert new user
+    cursor.execute(
+        "INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)",
+        (username, email, password, "student"),
+    )
+    conn.commit()
+    conn.close()
 
-@app.route("/faculty/dashboard")
-def faculty_dashboard():
-    if "user_id" not in session or session.get("role") != "faculty":
-        return redirect(url_for("f-login.html"))
-    return render_template("faculty_dashboard.html")
+    # Send confirmation email
+    send_confirmation_email(email, username)
 
-@app.route("/logout", methods=["POST"])
-def logout():
-    session.clear()
-    return jsonify({"message": "Logged out", "redirect": "/"})
-
-# Email configuration (update with your real info)
-EMAIL_SENDER = "zulensorg@gmail.com"
+    return jsonify({"message": "Signup successful. Confirmation email sent!"}), 200
+openai.api_key = os.getenv("OPENAI_API_KEY")
+EMAIL_SENDER = os.getenv("EMAIL_SENDER")
 EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
 EMAIL_SMTP_SERVER = "smtp.gmail.com"
 EMAIL_PORT = 587
+
 
 # ---------- USER AUTH ----------
 def send_confirmation_email(to_email, username):
@@ -128,6 +129,7 @@ def send_confirmation_email(to_email, username):
         server.quit()
     except Exception as e:
         print("Email sending failed:", e)
+
 
 
 @app.route("/student-signup", methods=["POST"])
@@ -709,7 +711,7 @@ def init_db():
         );
     """)
 
-    # Add revealed_grade column if it doesn't exist
+    # Add revealed_grade column if it doesn't exist,
     try:
         cursor.execute("ALTER TABLE reviews ADD COLUMN revealed_grade TEXT DEFAULT NULL;")
     except sqlite3.OperationalError:
