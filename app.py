@@ -423,6 +423,7 @@ def submit_review():
     if not course or not instructor or not review:
         return jsonify({"error": "Missing fields"}), 400
 
+    # Analyze tone with OpenAI
     prompt = f"""
     Analyze the following student review and return:
     1. The overall sentiment as Positive, Negative, or Neutral.
@@ -453,50 +454,62 @@ def submit_review():
         summary = "Summary unavailable due to error."
 
     flagged = 1 if sentiment.lower() == "negative" and rating <= 2 else 0
-conn = sqlite3.connect(DATABASE_PATH)
-cursor = conn.cursor()
 
-cursor.execute("""
-    SELECT email, email_notifications 
-    FROM users 
-    WHERE fullname = ? AND role = 'faculty'
-""", (instructor,))
-faculty = cursor.fetchone()
-conn.close()
+    # Insert into DB
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO reviews (course, instructor, rating, review, sentiment, summary, flagged, user_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, (course, instructor, rating, review, sentiment, summary, flagged, user_id))
+    conn.commit()
 
-if faculty and faculty[1]:  # if found and notifications are enabled
-    faculty_email = faculty[0]
+    # Check for faculty notification
+    cursor.execute("""
+        SELECT email, email_notifications 
+        FROM users 
+        WHERE fullname = ? AND role = 'faculty'
+    """, (instructor,))
+    faculty = cursor.fetchone()
+    conn.close()
 
-    subject = "🔔 New Review Submitted on ZULens"
-    body = f"""
-    Hello {instructor},
+    if faculty and faculty[1]:  # if found and notifications are enabled
+        faculty_email = faculty[0]
 
-    A new anonymous review mentioning you was just submitted on ZULens.
+        subject = "🔔 New Review Submitted on ZULens"
+        body = f"""
+        Hello {instructor},
 
-    Log in to your Faculty Dashboard to view it:
-    https://www.zulens.org/faculty/dashboard
+        A new anonymous review mentioning you was just submitted on ZULens.
 
-    — ZULens Team
-    """
+        Log in to your Faculty Dashboard to view it:
+        https://www.zulens.org/faculty/dashboard
 
-    try:
-         print("➡ Sending email to:", faculty_email)
-    msg = MIMEText(body)
-    msg["Subject"] = subject
-    msg["From"] = EMAIL_SENDER
-    msg["To"] = faculty_email
+        — ZULens Team
+        """
 
-    server = smtplib.SMTP(EMAIL_SMTP_SERVER, EMAIL_PORT)
-    server.starttls()
-    server.login(EMAIL_SENDER, EMAIL_PASSWORD)
-    server.sendmail(EMAIL_SENDER, faculty_email, msg.as_string())
-    server.quit()
-    print("✅ Faculty notification sent.")
-except Exception as e:
-    print("❌ Faculty email failed:", e)
+        try:
+            print("➡ Sending email to:", faculty_email)
+            msg = MIMEText(body)
+            msg["Subject"] = subject
+            msg["From"] = EMAIL_SENDER
+            msg["To"] = faculty_email
 
+            server = smtplib.SMTP(EMAIL_SMTP_SERVER, EMAIL_PORT)
+            server.starttls()
+            server.login(EMAIL_SENDER, EMAIL_PASSWORD)
+            server.sendmail(EMAIL_SENDER, faculty_email, msg.as_string())
+            server.quit()
+            print("✅ Faculty notification sent.")
+        except Exception as e:
+            print("❌ Faculty email failed:", e)
 
-
+    return jsonify({
+        "message": "Review submitted successfully",
+        "sentiment": sentiment,
+        "summary": summary,
+        "flagged": bool(flagged)
+    }), 200
 
 @app.route('/get-reviews', methods=['GET'])
 def get_reviews():
