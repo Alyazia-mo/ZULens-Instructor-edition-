@@ -1,6 +1,7 @@
+import os
 from flask import Flask, request, jsonify, render_template, session, redirect, url_for
 from flask_cors import CORS
-import sqlite3, os
+import sqlite3
 import nltk
 from nltk.sentiment import SentimentIntensityAnalyzer
 import smtplib
@@ -9,23 +10,24 @@ from email.mime.multipart import MIMEMultipart
 import json
 from openai import OpenAI
 
-
-
-
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-DATABASE_PATH = "faculty_reviews.db"
-
-
-nltk.download("vader_lexicon")
-
+# Initialize Flask app
 app = Flask(__name__, template_folder="templates", static_folder="static")
-app.secret_key = "ZULensSeniorProject"
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "fallback_default")
 CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
+# Initialize external clients and tools
+nltk.download("vader_lexicon")
 sia = SentimentIntensityAnalyzer()
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+# Database path
+DATABASE_PATH = "faculty_reviews.db"
+EMAIL_SENDER = os.getenv("EMAIL_SENDER")
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
+EMAIL_SMTP_SERVER = "smtp.gmail.com"
+EMAIL_PORT = 587
 
 # ---------- PAGE ROUTES ----------
-
 @app.route('/')
 def homepage():
     return render_template('homepage.html')
@@ -50,75 +52,132 @@ def submit_review_page():
 def admin_panel():
     return render_template('admin_panel.html')
 
-@app.route("/my-reviews")
+@app.route('/login')
+def login_page():
+    return render_template('login.html')
+
+@app.route('/faculty-login')
+def faculty_login_page():
+    return render_template('faculty_login.html')
+
+@app.route('/faculty/dashboard')
+def faculty_dashboard():
+    if session.get('role') != 'faculty':
+        return redirect(url_for('homepage'))
+    return render_template('faculty_dashboard.html')
+
+@app.route('/my-reviews')
 def my_reviews():
-    if session.get("role") != "student":
-        return redirect("/") 
-    user_id = session.get("user_id")
+    if session.get('role') != 'student':
+        return redirect('/')
+    user_id = session.get('user_id')
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM reviews WHERE user_id = ?", (user_id,))
     reviews = cursor.fetchall()
     conn.close()
-    return render_template("my_reviews.html", reviews=reviews)
+    return render_template('my_reviews.html', reviews=reviews)
 
-@app.route("/student-signup", methods=["POST"])
+# ---------- USER AUTH ----------
+@app.route('/student-signup', methods=['POST'])
 def student_signup():
     data = request.get_json()
-    username = data.get("username")
-    email = data.get("email")
-    password = data.get("password")
+    email = data.get('email', '').strip()
+    password = data.get('password', '').strip()
+    student_id = data.get('student_id', '').strip()
 
-    if not (username and email and password):
-        return jsonify({"error": "Missing fields"}), 400
+    if not email or not password or not student_id:
+        return jsonify({'error': 'Missing required fields'}), 400
 
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
-
-    # Check if email already exists
     cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
     if cursor.fetchone():
         conn.close()
-        return jsonify({"error": "Email already exists"}), 409
+        return jsonify({'error': 'Email already registered'}), 409
 
-    # Insert new user
     cursor.execute(
-        "INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)",
-        (username, email, password, "student"),
+        "INSERT INTO users (email, password, student_id, role) VALUES (?, ?, ?, ?)",
+        (email, password, student_id, 'student')
     )
     conn.commit()
     conn.close()
 
-    # Send confirmation email
+    username = email.split('@')[0]
     send_confirmation_email(email, username)
+    return jsonify({'message': 'Account created successfully!'}), 200
 
-    return jsonify({"message": "Signup successful. Confirmation email sent!"}), 200
-EMAIL_SENDER = os.getenv("EMAIL_SENDER")
-EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
-EMAIL_SMTP_SERVER = "smtp.gmail.com"
-EMAIL_PORT = 587
+@app.route('/faculty-signup', methods=['POST'])
+def faculty_signup():
+    data = request.get_json()
+    username = data.get('username')
+    email = data.get('email')
+    password = data.get('password')
 
+    if not (username and email and password):
+        return jsonify({'error': 'Missing fields'}), 400
 
-# ---------- USER AUTH ----------
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
+    if cursor.fetchone():
+        conn.close()
+        return jsonify({'error': 'Email already exists'}), 409
+
+    cursor.execute(
+        "INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)",
+        (username, email, password, 'faculty')
+    )
+    conn.commit()
+    conn.close()
+
+    send_confirmation_email(email, username)
+    return jsonify({'message': 'Signup successful. Confirmation email sent!'}), 200
+
+@app.route('/login-user', methods=['POST'])
+def login_user():
+    data = request.get_json()
+    email = data.get('email', '').strip()
+    password = data.get('password', '').strip()
+
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT id, role, fullname, student_id FROM users WHERE email = ? AND password = ?",
+        (email, password)
+    )
+    user = cursor.fetchone()
+    conn.close()
+
+    if not user:
+        return jsonify({'error': 'Invalid credentials'}), 401
+
+    user_id, role, fullname, student_id = user
+    session['user_id'] = user_id
+    session['email'] = email
+    session['role'] = role
+    session['username'] = fullname if role == 'faculty' else email
+    session['student_id'] = student_id if role == 'student' else None
+
+    redirect_url = '/faculty/dashboard' if role == 'faculty' else '/my-reviews'
+    return jsonify({'message': 'Login successful', 'redirect': redirect_url}), 200
+
+# ---------- EMAIL FUNCTION ----------
 def send_confirmation_email(to_email, username):
-    subject = "Welcome to ZULens!"
+    subject = f"Welcome to ZULens, {username}!"
     body = f"""
-    <html>
-      <body style="font-family: Arial, sans-serif;">
-        <h2>🎉 Welcome to ZULens, {username}!</h2>
-        <p>Thank you for signing up to ZULens – your voice matters.</p>
-        <p>We’re excited to have you as part of the community!</p>
-        <br>
-        <p>Cheers,<br>ZULens Team</p>
-      </body>
-    </html>
+    <html><body>
+      <h2>🎉 Welcome to ZULens, {username}!</h2>
+      <p>Thank you for signing up – your voice matters.</p>
+      <p>Cheers,<br/>ZULens Team</p>
+    </body></html>
     """
 
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
-    msg["From"] = EMAIL_SENDER
-    msg["To"] = to_email
-    msg.attach(MIMEText(body, "html"))
+    msg = MIMEMultipart('alternative')
+    msg['Subject'] = subject
+    msg['From'] = EMAIL_SENDER
+    msg['To'] = to_email
+    msg.attach(MIMEText(body, 'html'))
 
     try:
         server = smtplib.SMTP(EMAIL_SMTP_SERVER, EMAIL_PORT)
@@ -127,7 +186,61 @@ def send_confirmation_email(to_email, username):
         server.sendmail(EMAIL_SENDER, to_email, msg.as_string())
         server.quit()
     except Exception as e:
-        print("Email sending failed:", e)
+        print('Email sending failed:', e)
+
+# ---------- INIT DB ----------
+def init_db():
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            fullname TEXT,
+            email TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL,
+            student_id TEXT,
+            role TEXT,
+            email_notifications BOOLEAN DEFAULT 1
+        )
+    """
+    )
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS reviews (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            course TEXT,
+            instructor TEXT,
+            rating INTEGER,
+            review TEXT,
+            sentiment TEXT,
+            summary TEXT,
+            flagged INTEGER DEFAULT 0,
+            user_id INTEGER,
+            revealed_grade TEXT DEFAULT NULL,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )
+    """
+    )
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS review_reports (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            review_id INTEGER,
+            faculty_id INTEGER,
+            reason TEXT,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(review_id) REFERENCES reviews(id),
+            FOREIGN KEY(faculty_id) REFERENCES users(id)
+        )
+    """
+    )
+    conn.commit()
+    conn.close()
+
+init_db()
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 10000))
+    app.run(host='0.0.0.0', port=port)
+
 
 
 @app.route("/faculty-signup", methods=["POST"])
