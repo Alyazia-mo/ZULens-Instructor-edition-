@@ -232,8 +232,8 @@ def login_user():
 
     # ... set session and redirect as before ...
 
-@app.route("/login-user", methods=["POST"])
-def login_user():
+@app.route("/faculty-login", methods=["POST"])
+def faculty_login():
     payload = request.get_json(silent=True) or request.form
     email    = payload.get("email",   "").strip()
     password = payload.get("password","").strip()
@@ -241,17 +241,16 @@ def login_user():
     conn   = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
     cursor.execute(
-      "SELECT id, role, fullname, student_id FROM users WHERE email=? AND password=?",
+      "SELECT id, fullname FROM users WHERE email=? AND password=? AND role='faculty'",
       (email, password)
     )
     user = cursor.fetchone()
     conn.close()
 
     if not user:
-        return jsonify({"error": "Invalid credentials"}), 401
+        return jsonify({"error": "Invalid credentials or not a faculty account"}), 401
 
     # ... set session and redirect as before ...
-
 
 
 
