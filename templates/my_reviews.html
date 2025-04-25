@@ -77,17 +77,20 @@
             return;
           }
 
-          data.forEach((r, index) => {
+         data.forEach((r, index) => {
             container.innerHTML += `
-              <div class="card mb-3 shadow-sm">
-                <div class="card-body">
-                  <h5 class="card-title">${r.course} — ${r.instructor}</h5>
-                  <p><strong>Rating:</strong> ${r.rating} / 5</p>
-                  <p><strong>Sentiment:</strong> ${r.sentiment}</p>
-                  <p><strong>Summary:</strong> ${r.summary}</p>
-                  <p><strong>Review:</strong> "${r.review}"</p>
-                  ${r.flagged ? '<span class="badge bg-danger">⚠️ Flagged</span>' : ''}
-                  <button class="btn btn-sm btn-danger mt-2" onclick="deleteReview(${r.id})">🗑 Delete</button>
+              <div class="col-md-6 offset-md-3">
+                <div class="card mb-3 shadow-sm">
+                  <div class="card-body">
+                    <h5 class="card-title">${r.course} — ${r.instructor}</h5>
+                    <p><strong>Rating:</strong> ${r.rating} / 5</p>
+                    <p><strong>Sentiment:</strong> ${r.sentiment}</p>
+                    <p><strong>Summary:</strong> ${r.summary}</p>
+                    <p><strong>Review:</strong> "${r.review}"</p>
+                    ${r.revealed_grade ? `<p><strong>🎓 Faculty Grade:</strong> ${r.revealed_grade}</p>` : '<p><em>No grade assigned yet.</em></p>'}
+                    ${r.flagged ? '<span class="badge bg-danger">⚠️ Flagged</span>' : ''}
+                    <button class="btn btn-sm btn-danger mt-2" onclick="deleteReview(${r.id})">🗑 Delete</button>
+                  </div>
                 </div>
               </div>
             `;
