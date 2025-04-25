@@ -167,36 +167,37 @@ def signup_student():
         return jsonify({"error": "Server error during signup"}), 500
 
 @app.route("/faculty-signup", methods=["POST"])
-def signup_faculty():
+def faculty_signup():
     data = request.get_json()
-    fullname = data.get("fullname", "").strip()
-    email = data.get("email", "").strip()
-    password = data.get("password", "").strip()
+    username = data.get("username")
+    email = data.get("email")
+    password = data.get("password")
 
-    if not fullname or not email or not password:
-        return jsonify({"error": "Missing required fields"}), 400
+    if not (username and email and password):
+        return jsonify({"error": "Missing fields"}), 400
 
-    try:
-        conn = sqlite3.connect(DATABASE_PATH)
-        cursor = conn.cursor()
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
 
-        cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
-        if cursor.fetchone():
-            return jsonify({"error": "Email already registered"}), 409
-
-        cursor.execute("""
-            INSERT INTO users (fullname, email, password, role)
-            VALUES (?, ?, ?, ?)
-        """, (fullname, email, password, "faculty"))
-
-        conn.commit()
+    # Check if email already exists
+    cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
+    if cursor.fetchone():
         conn.close()
+        return jsonify({"error": "Email already exists"}), 409
 
-        return jsonify({"message": "Faculty account created!"}), 200
+    # Insert new user with role "faculty"
+    cursor.execute(
+        "INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)",
+        (username, email, password, "faculty"),
+    )
+    conn.commit()
+    conn.close()
 
-    except Exception as e:
-        print("Faculty signup error:", e)
-        return jsonify({"error": "Server error during signup"}), 500
+    # ✅ Send confirmation email to faculty as well
+    send_confirmation_email(email, username)
+
+    return jsonify({"message": "Signup successful. Confirmation email sent!"}), 200
+
 
 @app.route("/login-user", methods=["POST"])
 def login_user():
