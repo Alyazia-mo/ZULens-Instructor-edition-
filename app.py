@@ -516,7 +516,7 @@ def submit_review():
 def get_reviews():
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
-    cursor.execute("SELECT course, instructor, rating, review, sentiment, summary, revealed_grade FROM reviews")
+    cursor.execute("SELECT id, course, instructor, rating, review, sentiment, summary, flagged, revealed_grade FROM reviews")
     rows = cursor.fetchall()
     conn.close()
 
@@ -530,6 +530,7 @@ def get_reviews():
             "review": row[4],
             "sentiment": row[5],
             "summary": row[6],
+            "revealed_grade": row[8],
             "flagged": bool(row[7])
         })
 
