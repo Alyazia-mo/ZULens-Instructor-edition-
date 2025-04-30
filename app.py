@@ -495,10 +495,11 @@ def submit_review():
 
     # Check for faculty notification
     cursor.execute("""
-        SELECT email, email_notifications 
-        FROM users 
-        WHERE fullname = ? AND role = 'faculty'
-    """, (instructor,))
+    SELECT email, email_notifications 
+    FROM users 
+    WHERE LOWER(fullname) = ? AND role = 'faculty'
+    """, (raw_instructor.lower(),))
+
     faculty = cursor.fetchone()
     conn.close()
 
@@ -597,15 +598,20 @@ def get_my_reviews():
 
 @app.route("/delete-review-by-id", methods=["POST"])
 def delete_review_by_id():
-    user_id = session.get("user_id")
-    review_id = request.json.get("review_id")
+    data = request.get_json()
+    review_id = data.get("review_id")
+
+    if not review_id:
+        return jsonify({"error": "Missing review_id"}), 400
 
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM reviews WHERE id = ? AND user_id = ?", (review_id, user_id))
+    cursor.execute("DELETE FROM reviews WHERE id = ?", (review_id,))
     conn.commit()
     conn.close()
+
     return jsonify({"message": "Review deleted"}), 200
+
 
 @app.route("/update-review", methods=["POST"])
 def update_review():
