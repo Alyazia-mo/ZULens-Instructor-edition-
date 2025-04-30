@@ -161,6 +161,9 @@
                   <p><strong>AI Summary:</strong> ${r.summary}</p>
                   <hr />
                   <p>"${r.review}"</p>
+                  {% if review.revealed_grade %}
+                    <p><strong>Grade:</strong> {{ review.revealed_grade }}</p>
+                  {% endif %}
                 </div>
               </div>
             `;
@@ -172,6 +175,7 @@
     document.getElementById("searchInput").addEventListener("input", renderGroupedReviews);
     document.getElementById("courseFilter").addEventListener("change", renderGroupedReviews);
     document.getElementById("sentimentFilter").addEventListener("change", renderGroupedReviews);
+
 
 
     window.onload = () => {
