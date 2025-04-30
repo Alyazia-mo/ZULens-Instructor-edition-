@@ -183,19 +183,17 @@ def signup_faculty():
         conn = sqlite3.connect(DATABASE_PATH)
         cursor = conn.cursor()
 
-        # Check duplicate
+
         cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
         if cursor.fetchone():
             conn.close()
             return jsonify({"error": "Email already registered"}), 409
 
-        # Insert new faculty user
         cursor.execute("""
             INSERT INTO users (fullname, email, password, role)
             VALUES (?, ?, ?, ?)
         """, (fullname, email, password, "faculty"))
 
-        # Commit and close the DB connection
         conn.commit()
         conn.close()
 
@@ -284,7 +282,7 @@ def get_faculty_reviews():
     reviews = []
     for row in rows:
         student_id_display = "Hidden"
-        # You can fetch student ID from users table if you wish, here we're skipping it for privacy
+
         reviews.append({
             "id": row[0],
             "course": row[1],
@@ -391,6 +389,36 @@ def report_review():
 
     return jsonify({"message": "Review reported"}), 200
 
+@app.route("/admin/reported-reviews")
+def get_reported_reviews():
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT reviews.id, course, instructor, rating, review, sentiment, summary, reason
+        FROM reviews
+        JOIN review_reports ON reviews.id = review_reports.review_id
+        ORDER BY review_reports.timestamp DESC
+    """)
+    rows = cursor.fetchall()
+    conn.close()
+
+    reported = []
+    for row in rows:
+        reported.append({
+            "id": row[0],
+            "course": row[1],
+            "instructor": row[2],
+            "rating": row[3],
+            "review": row[4],
+            "sentiment": row[5],
+            "summary": row[6],
+            "reason": row[7]
+        })
+
+    return jsonify(reported)
+
+
 @app.route("/faculty/notifications", methods=["POST"])
 def toggle_notifications():
     user_id = session.get("user_id")
@@ -474,7 +502,7 @@ def submit_review():
     faculty = cursor.fetchone()
     conn.close()
 
-    if faculty and faculty[1]:  # if found and notifications are enabled
+    if faculty and faculty[1]:  
         faculty_email = faculty[0]
 
         subject = "🔔 New Review Submitted on ZULens"
